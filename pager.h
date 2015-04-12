@@ -82,7 +82,10 @@ public:
         /** Minimum acceptable width */
         int min_width;
 
-        comp_t() : comp(), desc(), representative(L""), comp_width(0), desc_width(0), pref_width(0), min_width(0)
+        size_t chomp_prefix;
+
+        comp_t() : comp(), desc(), representative(L"", 0), comp_width(0),
+        desc_width(0), pref_width(0), min_width(0), chomp_prefix(0)
         {
         }
     };

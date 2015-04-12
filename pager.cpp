@@ -95,6 +95,9 @@ line_t pager_t::completion_print_item(const wcstring &prefix, const comp_t *c, s
 
     line_t line_data;
 
+    // SNNW: should we not consider the prefix length here??
+    width += mini(c->chomp_prefix, prefix.size());
+
     if (c->pref_width <= width)
     {
         /*
@@ -133,7 +136,8 @@ line_t pager_t::completion_print_item(const wcstring &prefix, const comp_t *c, s
             written += print_max(PAGER_SPACER_STRING, highlight_spec_normal, comp_width - written, true /* has_more */, &line_data);
 
         int packed_color = highlight_spec_pager_prefix | highlight_make_background(bg_color);
-        written += print_max(prefix, packed_color, comp_width - written, ! comp.empty(), &line_data);
+
+        written += print_max(prefix.substr(0, prefix.size() - c->chomp_prefix), packed_color, comp_width - written, ! comp.empty(), &line_data);
 
         packed_color = highlight_spec_pager_completion | highlight_make_background(bg_color);
         written += print_max(comp, packed_color, comp_width - written, i + 1 < c->comp.size(), &line_data);
@@ -280,7 +284,7 @@ static void join_completions(comp_info_list_t *comps)
             // We're the first with this description
             desc_table[desc] = i+1;
         }
-        else
+        else if (new_comp.chomp_prefix == 0)
         {
             // There's a prior completion with this description. Append the new ones to it.
             comp_t *prior_comp = &comps->at(prev_idx_plus_one - 1);
@@ -314,6 +318,8 @@ static comp_info_list_t process_completions_into_infos(const completion_list_t &
 
         // Set the representative completion
         comp_info->representative = comp;
+        // TODO: get chomp_prefix from the outside
+        comp_info->chomp_prefix = 0;
     }
     return result;
 }
@@ -333,7 +339,8 @@ void pager_t::measure_completion_infos(comp_info_list_t *infos, const wcstring &
             if (j >= 1)
                 comp->comp_width += 2;
 
-            comp->comp_width += prefix_len + fish_wcswidth(comp_strings.at(j).c_str());
+            comp->comp_width += maxi(0ul, prefix_len - comp->chomp_prefix) +
+                                fish_wcswidth(comp_strings.at(j).c_str());
         }
 
         // Compute desc_width
